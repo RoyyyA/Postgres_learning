@@ -1,0 +1,1160 @@
+postgres notes
+
+https://www.postgresqltutorial.com
+
+installing Postgres on debian :
+
+$ sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+$ wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+
+apt-get update
+apt-get install postgresql
+
+
+su - postgres
+pqsl
+
+postgres=# \q
+postgres@ubuntu-dev:~$ exit
+
+####################
+select command examples:
+
+SELECT
+   first_name,
+   last_name,
+   email
+FROM
+   customer;
+
+SELECT * FROM customer;
+
+
+SELECT 
+   first_name || ' ' || last_name,   {--> displays two columns next to each other ( concatenation operator ||)  }
+   email
+FROM 
+   customer;
+
+####################
+PostgreSQL Column Alias (AS command)
+
+examples
+SELECT expression AS alias_name
+FROM table_name;
+
+
+SELECT 
+   first_name, 
+   last_name AS surname
+FROM customer;
+
+SELECT
+    first_name || ' ' || last_name AS full_name
+FROM
+    customer;
+
+if the name contains space
+
+column_name AS "column alias"
+
+
+*Assign a column or an expression a column alias using the syntax column_name AS alias_name or expression AS alias_name.
+*The AS keyword is optional.
+*Use double quotes (“) to surround a column alias that contains spaces.
+
+####################
+PostgreSQL ORDER BY
+
+SELECT
+	select_list
+FROM
+	table_name
+ORDER BY
+	sort_expression1 [ASC | DESC],
+        ...
+	sort_expressionN [ASC | DESC];
+
+examples: 
+
+SELECT
+	first_name,
+	last_name
+FROM
+	customer
+ORDER BY
+	first_name ASC,
+	last_name DESC;
+
+
+*The LENGTH() function accepts a string and returns the length of that string.
+
+SELECT 
+	first_name,
+	LENGTH(first_name) len
+FROM
+	customer
+ORDER BY 
+	len DESC;
+
+
+dvdrental=# select first_name || ' ' || last_name as "Full Name", length('Full Name') as len, email from customer order by len desc;
+
+dvdrental=# select first_name || ' ' || last_name || ' ,email is: '|| email as "Full name with email", length('Full name with email') as len from customer order by len desc;
+
+    *Use the ORDER BY clause in the SELECT statement to sort rows.
+    *Use the ASC option to sort rows in ascending order and DESC option to sort rows in descending order. The ORDER BY clause uses the ASC option by default.
+    
+*Use NULLS FIRST and NULLS LAST options to explicitly specify the order of NULL with other non-null values.
+
+examples:
+
+-- create a new table
+CREATE TABLE sort_demo(
+	num INT
+);
+
+-- insert some data
+INSERT INTO sort_demo(num)
+VALUES(1),(2),(3),(null);
+
+
+SELECT num
+FROM sort_demo
+ORDER BY num NULLS FIRST;
+
+SELECT num
+FROM sort_demo
+ORDER BY num NULLS LAST;
+
+
+SELECT num
+FROM sort_demo
+ORDER BY num DESC NULLS LAST;
+
+####################
+distinct command
+
+*The DISTINCT clause is used in the SELECT statement to remove duplicate rows from a result set. The DISTINCT clause keeps one row for each group of duplicates. The DISTINCT clause can be applied to one or more columns in the select list of the SELECT statement.
+
+SELECT
+   DISTINCT column1
+FROM
+   table_name;
+
+*If you specify multiple columns, the DISTINCT clause will evaluate the duplicate based on the combination of values of these columns.
+
+SELECT
+   DISTINCT column1, column2
+FROM
+   table_name;
+
+
+*PostgreSQL also provides the DISTINCT ON (expression) to keep the “first” row of each group of duplicates using the following syntax:
+
+SELECT
+   DISTINCT ON (column1) column_alias,
+   column2
+FROM
+   table_name
+ORDER BY
+   column1,
+   column2;
+
+examples:
+
+CREATE TABLE distinct_demo (
+	id serial NOT NULL PRIMARY KEY,
+	bcolor VARCHAR,
+	fcolor VARCHAR
+);
+
+INSERT INTO distinct_demo (bcolor, fcolor)
+VALUES
+	('red', 'red'),
+	('red', 'red'),
+	('red', NULL),
+	(NULL, 'red'),
+	('red', 'green'),
+	('red', 'blue'),
+	('green', 'red'),
+	('green', 'blue'),
+	('green', 'green'),
+	('blue', 'red'),
+	('blue', 'green'),
+	('blue', 'blue');
+
+SELECT
+	DISTINCT bcolor
+FROM
+	distinct_demo
+ORDER BY
+	bcolor;
+
+SELECT
+	DISTINCT bcolor,
+	fcolor
+FROM
+	distinct_demo
+ORDER BY
+	bcolor,
+	fcolor;
+
+####################
+where clause
+The syntax of the PostgreSQL WHERE clause is as follows:
+
+SELECT select_list
+FROM table_name
+WHERE condition
+ORDER BY sort_expression
+
+*The WHERE clause appears right after the FROM clause of the SELECT statement.  The WHERE clause uses the condition to filter the rows returned from the SELECT clause.
+
+*The condition must evaluate to true, false, or unknown. It can be a boolean expression or a combination of boolean expressions using the AND and OR operators.
+
+
+AND	Logical operator AND
+OR	Logical operator OR
+IN	Return true if a value matches any value in a list
+BETWEEN	Return true if a value is between a range of values
+LIKE	Return true if a value matches a pattern
+IS NULL	Return true if a value is NULL
+NOT	Negate the result of other operators
+
+exapmles:
+
+SELECT
+	last_name,
+	first_name
+FROM
+	customer
+WHERE
+	first_name = 'Jamie' AND 
+        last_name = 'Rice';
+
+SELECT
+	first_name,
+	last_name
+FROM
+	customer
+WHERE
+	last_name = 'Rodriguez' OR 
+	first_name = 'Adam';
+
+SELECT
+	first_name,
+	last_name
+FROM
+	customer
+WHERE 
+	first_name IN ('Ann','Anne','Annie');
+
+The % is called a wildcard that matches any string. The 'Ann%' pattern matches any string that starts with 'Ann'.
+
+SELECT
+	first_name,
+	last_name
+FROM
+	customer
+WHERE 
+	first_name LIKE 'Ann%'
+
+select first_name , last_name , email from customer where first_name like 'An%';
+
+select first_name , last_name , email from customer where last_name like '%son';
+
+
+
+The following example finds customers whose first names start with the letter A and contains 3 to 5 characters by using the BETWEEN operator.
+
+The BETWEEN operator returns true if a value is in a range of values.
+
+SELECT
+	first_name,
+	LENGTH(first_name) name_length
+FROM
+	customer
+WHERE 
+	first_name LIKE 'A%' AND
+	LENGTH(first_name) BETWEEN 3 AND 5
+ORDER BY
+	name_length;
+
+
+select first_name || ' ' || last_name as Full_name, length(first_name)+length(last_name) as len, email from customer where length(first_name)+length(last_name) between 5 and 15;
+
+
+PostgreSQL LIMIT is an optional clause of the SELECT statement that constrains the number of rows returned by the query.
+
+The following illustrates the syntax of the LIMIT clause:
+
+SELECT select_list 
+FROM table_name
+ORDER BY sort_expression
+LIMIT row_count
+
+
+The statement returns row_count rows generated by the query. If row_count is zero, the query returns an empty set. In case row_count is NULL, the query returns the same result set as it does not have the LIMIT clause.
+
+In case you want to skip a number of rows before returning the row_count rows, you use OFFSET clause placed after the LIMIT clause as the following statement:
+
+SELECT select_list
+FROM table_name
+LIMIT row_count OFFSET row_to_skip;
+
+
+The statement first skips row_to_skip rows before returning row_count rows generated by the query. If row_to_skip is zero, the statement will work like it doesn’t have the OFFSET clause.
+
+
+Because a table may store rows in an unspecified order, when you use the LIMIT clause, you should always use the ORDER BY clause to control the row order. If you don’t use the ORDER BY clause, you may get a result set with the unspecified order of rows.
+
+
+This example uses the LIMIT clause to get the first five films sorted by film_id:
+
+SELECT
+	film_id,
+	title,
+	release_year
+FROM
+	film
+ORDER BY
+	film_id
+LIMIT 5;
+
+To retrieve 4 films starting from the fourth one ordered by film_id, you use both LIMIT and OFFSET clauses as follows:
+
+SELECT
+	film_id,
+	title,
+	release_year
+FROM
+	film
+ORDER BY
+	film_id
+LIMIT 4 OFFSET 3;select film_id , title , rental_rate from film order by film_id limit 40 offset 70;
+
+The syntax of the IN operator is as follows:
+
+value IN (value1,value2,...)
+
+The IN operator returns true if the value matches any value in the list i.e., value1 , value2 , …
+
+The list of values can be a list of literal values such as numbers, strings or a result of a SELECT statement like this:
+
+value IN (SELECT column_name FROM table_name);
+
+SELECT
+	customer_id,
+	rental_id,
+	return_date
+FROM
+	rental
+WHERE
+	customer_id NOT IN (1, 2);
+
+
+SELECT
+	customer_id,
+	first_name,
+	last_name
+FROM
+	customer
+WHERE
+	customer_id IN (
+		SELECT customer_id
+		FROM rental
+		WHERE CAST (return_date AS DATE) = '2005-05-27'
+	)
+ORDER BY customer_id;
+
+
+between:
+
+SELECT
+	customer_id,
+	payment_id,
+	amount
+FROM
+	payment
+WHERE
+	amount BETWEEN 8 AND 9;
+
+SELECT
+	customer_id,
+	payment_id,
+	amount
+FROM
+	payment
+WHERE
+	amount NOT BETWEEN 8 AND 9;
+
+
+SELECT
+	customer_id,
+	payment_id,
+	amount,
+ payment_date
+FROM
+	payment
+WHERE
+	payment_date BETWEEN '2007-02-07' AND '2007-02-15'; 
+
+Operator	Equivalent
+~~	LIKE
+~~*	ILIKE
+!~~	NOT LIKE
+!~~*	NOT ILIKE
+
+SELECT
+	first_name,
+	last_name
+FROM
+	customer
+WHERE
+	first_name LIKE '_her%'
+ORDER BY 
+        first_name;
+
+
+SELECT
+	first_name,
+	last_name
+FROM
+	customer
+WHERE
+	first_name NOT LIKE 'Jen%'
+ORDER BY 
+        first_name
+
+
+SELECT
+	'foo' LIKE 'foo', -- true
+	'foo' LIKE 'f%', -- true
+	'foo' LIKE '_o_', -- true
+	'bar' LIKE 'b_'; -- false
+
+    Percent sign ( %) matches any sequence of zero or more characters.
+    Underscore sign ( _)  matches any single character.
+
+The syntax of PostgreSQL LIKE operator is as follows:
+
+value LIKE pattern
+
+
+In the database world, NULL means missing information or not applicable. NULL is not a value, therefore, you cannot compare it with any other values like numbers or strings. The comparison of NULL with a value will always result in NULL, which means an unknown result.
+
+Assuming that you have a contacts table that stores the first name, last name, email, and phone number of contacts. At the time of recording the contact, you may not know the contact’s phone number.
+
+To deal with this, you define the phone column as a nullable column and insert NULL into the phone column when you save the contact information.
+
+CREATE TABLE contacts(
+    id INT GENERATED BY DEFAULT AS IDENTITY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    phone VARCHAR(15),
+    PRIMARY KEY (id)
+);
+
+
+INSERT INTO contacts(first_name, last_name, email, phone)
+VALUES ('John','Doe','john.doe@example.com',NULL),
+    ('Lily','Bush','lily.bush@example.com','(408-234-2764)');
+
+
+SELECT
+    id,
+    first_name,
+    last_name,
+    email,
+    phone
+FROM
+    contacts
+WHERE
+    phone = NULL;
+
+or 
+
+SELECT
+    id,
+    first_name,
+    last_name,
+    email,
+    phone
+FROM
+    contacts
+WHERE
+    phone IS NULL;
+
+SELECT
+    id,
+    first_name,
+    last_name,
+    email,
+    phone
+FROM
+    contacts
+WHERE
+    phone IS NOT NULL;
+
+join:
+
+PostgreSQL join is used to combine columns from one (self-join) or more tables based on the values of the common columns between related tables. The common columns are typically the primary key columns of the first table and foreign key columns of the second table.
+
+
+able aliases temporarily assign tables new names during the execution of a query.
+
+The following illustrates the syntax of a table alias:
+
+table_name AS alias_name;
+
+In this syntax, the table_name is assigned an alias as alias_name. Similar to column aliases, the AS keyword is optional. It means that you omit the AS keyword like this:
+
+table_name AS alias_name;
+
+To make the query shorter, you can use the table aliases for the table names listed on FROM and INNER JOIN clauses. For example:
+
+SELECT
+	c.customer_id,
+	first_name,
+	amount,
+	payment_date
+FROM
+	customer c
+INNER JOIN payment p 
+    ON p.customer_id = c.customer_id
+ORDER BY 
+   payment_date DESC;
+
+
+
+Using table aliases in self-join
+
+When you join a table to itself (a.k.a self-join), you need to use table aliases. This is because referencing the same table multiple times within a query results in an error.
+
+The following example shows how to reference the employee table twice in the same query using the table aliases:
+
+SELECT
+    e.first_name employee,
+    m .first_name manager
+FROM
+    employee e
+INNER JOIN employee m 
+    ON m.employee_id = e.manager_id
+ORDER BY manager;
+
+
+inner join:
+
+
+To join table A with the table B, you follow these steps:
+
+    First, specify columns from both tables that you want to select data in the SELECT clause.
+    Second, specify the main table i.e., table A in the FROM clause.
+    Third, specify the second table (table B) in the INNER JOIN clause and provide a join condition after the ON keyword.
+
+How the INNER JOIN works.
+
+For each row in the table A, inner join compares the value in the pka column with the value in the fka column of every row in the table B:
+
+    If these values are equal, the inner join creates a new row that contains all columns of both tables and adds it to the result set.
+    In case these values are not equal, the inner join just ignores them and moves to the next row.
+
+
+If you reference columns with the same name from different tables in a query, you will get an error. To avoid the error, you need to qualify these columns fully using the following syntax:
+
+table_name.column_name
+
+Since both tables have the same customer_id column, you can use the USING syntax:
+
+SELECT
+	customer_id,
+	first_name,
+	last_name,
+	amount,
+	payment_date
+FROM
+	customer
+INNER JOIN payment USING(customer_id)
+ORDER BY payment_date;	
+
+
+three tables inner join
+
+To join the three tables, you place the second INNER JOIN clause after the first INNER JOIN clause as the following query:
+
+SELECT
+	c.customer_id,
+	c.first_name customer_first_name,
+	c.last_name customer_last_name,
+	s.first_name staff_first_name,
+	s.last_name staff_last_name,
+	amount,
+	payment_date
+FROM
+	customer c
+INNER JOIN payment p 
+    ON p.customer_id = c.customer_id
+INNER JOIN staff s 
+    ON p.staff_id = s.staff_id
+ORDER BY payment_date;
+
+dvdrental=# select c.first_name customer_first_name , c.last_name customer_last_name , s.first_name staff_first_name , s.last_name staff_last_name , amount , payment_date
+dvdrental-# from customer c
+dvdrental-# inner join payment p using(customer_id)
+dvdrental-# inner join staff s using(staff_id)
+dvdrental-# order by payment_date;
+
+
+left join 
+
+To select data from the table A that may or may not have corresponding rows in the table B , you use the LEFT JOIN clause.
+
+The following statement illustrates the LEFT JOIN syntax that joins the table A with the table B :
+
+SELECT
+	pka,
+	c1,
+	pkb,
+	c2
+FROM
+	A
+LEFT JOIN B ON pka = fka;
+
+To join the table A with the table B table using a left join, you follow these steps:
+
+    First, specify the columns in both tables from which you want to select data in the SELECT clause.
+    Second, specify the left table (table A) in the FROM clause.
+    Third, specify the right table (table B) in the LEFT JOIN clause and the join condition after the ON keyword.
+
+The LEFT JOIN clause starts selecting data from the left table. For each row in the left table, it compares the value in the pka column with the value of each row in the fka column in the right table.
+
+If these values are equal, the left join clause creates a new row that contains columns that appear in the SELECT clause and adds this row to the result set.
+
+In case these values are not equal, the left join clause also creates a new row that contains columns that appear in the SELECT clause. In addition, it fills the columns that come from the right table with NULL.
+
+dvdrental=# select f.film_id , title, inventory_id from film f left join inventory using(film_id) where inventory_id is not null order by title;
+dvdrental=# select f.film_id , title, inventory_id from film f left join inventory using(film_id) where inventory_id is null order by title;
+dvdrental=# select f.film_id , title, inventory_id from film f left join inventory using(film_id) order by title;
+
+right join:
+
+DROP TABLE IF EXISTS films;
+DROP TABLE IF EXISTS film_reviews;
+
+CREATE TABLE films(
+   film_id SERIAL PRIMARY KEY,
+   title varchar(255) NOT NULL
+);
+
+INSERT INTO films(title)
+VALUES('Joker'),
+      ('Avengers: Endgame'),
+      ('Parasite');
+
+CREATE TABLE film_reviews(
+   review_id SERIAL PRIMARY KEY,
+   film_id INT,
+   review VARCHAR(255) NOT NULL	
+);
+
+INSERT INTO film_reviews(film_id, review)
+VALUES(1, 'Excellent'),
+      (1, 'Awesome'),
+      (2, 'Cool'),
+      (NULL, 'Beautiful');
+
+
+SELECT 
+   review, 
+   title
+FROM 
+   films
+RIGHT JOIN film_reviews 
+   ON film_reviews.film_id = films.film_id;
+
+
+In this statement, films is the left table and film_reviews is the right table.
+
+The RIGHT JOIN clause starts selecting data from the right table (film_reviews).
+
+For each row from the right table (film_reviews), it checks if the value in the film_id column of the film_reviews table equals the value in the film_id column of every row from the left table (films).
+
+If they are equal, the RIGHT JOIN creates a new row that contains columns from both tables specified in the SELECT clause and includes this new row in the result set.
+
+Otherwise, the RIGHT JOIN still creates a new row that contains columns from both tables and includes this new row in the result set. However, it fills the columns from the left table (films) with NULL.
+
+In other words, the RIGHT JOIN selects all rows from the right table whether or not they have matching rows from the left table.
+
+
+A self-join is a regular join that joins a table to itself. In practice, you typically use a self-join to query hierarchical data or to compare rows within the same table.
+
+To form a self-join, you specify the same table twice with different table aliases and provide the join predicate after the ON keyword.
+
+The following query uses an INNER JOIN that joins the table to itself:
+
+SELECT select_list
+FROM table_name t1
+INNER JOIN table_name t2 ON join_predicate;
+
+In this syntax, the table_name is joined to itself using the INNER JOIN clause.
+
+Also, you can use the LEFT JOIN or RIGHT JOIN clause to join table to itself like this:
+
+SELECT select_list
+FROM table_name t1
+LEFT JOIN table_name t2 ON join_predicate;
+
+
+Introduction to the PostgreSQL FULL OUTER JOIN
+
+Suppose that you want to perform a full outer join of two tables: A and B. The following illustrates the syntax of the FULL OUTER JOIN:
+
+SELECT * FROM A
+FULL [OUTER] JOIN B on A.id = B.id;
+
+In this syntax, the OUTER keyword is optional.
+
+The full outer join combines the results of both left join and right join.
+
+If the rows in the joined table do not match, the full outer join sets NULL values for every column of the table that does not have the matching row.
+
+If a row from one table matches a row in another table, the result row will contain columns populated from columns of rows from both tables.
+
+The result includes the matching rows from both tables, and also the rows that do not match.
+
+DROP TABLE IF EXISTS departments;
+DROP TABLE IF EXISTS employees;
+
+CREATE TABLE departments (
+	department_id serial PRIMARY KEY,
+	department_name VARCHAR (255) NOT NULL
+);
+
+CREATE TABLE employees (
+	employee_id serial PRIMARY KEY,
+	employee_name VARCHAR (255),
+	department_id INTEGER
+);
+
+
+SELECT
+	employee_name,
+	department_name
+FROM
+	employees e
+FULL OUTER JOIN departments d 
+        ON d.department_id = e.department_id;
+
+The result set includes every employee who belongs to a department and every department which have an employee. In addition, it includes every employee who does not belong to a department and every department that does not have an employee.
+
+To find the department that does not have any employees, you use a WHERE clause as follows:
+
+SELECT
+	employee_name,
+	department_name
+FROM
+	employees e
+FULL OUTER JOIN departments d 
+        ON d.department_id = e.department_id
+WHERE
+	employee_name IS NULL;
+
+
+o find the employee who does not belong to any department, you check for the NULL of the department_name in the WHERE clause as the following statement:
+
+SELECT
+	employee_name,
+	department_name
+FROM
+	employees e
+FULL OUTER JOIN departments d ON d.department_id = e.department_id
+WHERE
+	department_name IS NULL;
+
+
+
+A CROSS JOIN clause allows you to produce a Cartesian Product of rows in two or more tables. (mese zarbe matris)
+
+Different from other join clauses such as LEFT JOIN  or INNER JOIN, the CROSS JOIN clause does not have a join predicate.
+
+Suppose you have to perform a CROSS JOIN of two tables T1 and T2.
+
+If T1 has n rows and T2 has m rows, the result set will have nxm rows. For example, the T1 has 1,000 rows and T2 has 1,000 rows, the result set will have 1,000 x 1,000 = 1,000,000 rows.
+
+The following illustrates the syntax of the CROSS JOIN syntax:
+
+SELECT select_list
+FROM T1
+CROSS JOIN T2;
+
+The following statement is equivalent to the above statement:
+
+SELECT select_list
+FROM T1, T2;
+
+Also, you can use an INNER JOIN clause with a condition that always evaluates to true to simulate the cross join:
+
+SELECT *
+FROM T1
+INNER JOIN T2 ON true;
+
+The following CREATE TABLE statements create T1 and T2 tables and insert some sample data for the cross demonstration.
+
+DROP TABLE IF EXISTS T1;
+CREATE TABLE T1 (label CHAR(1) PRIMARY KEY);
+
+DROP TABLE IF EXISTS T2;
+CREATE TABLE T2 (score INT PRIMARY KEY);
+
+INSERT INTO T1 (label)
+VALUES
+	('A'),
+	('B');
+
+INSERT INTO T2 (score)
+VALUES
+	(1),
+	(2),
+	(3);
+
+The following statement uses the CROSS JOIN operator to join the table T1 with the table T2.
+
+SELECT *
+FROM T1
+CROSS JOIN T2;
+
+ label | score
+-------+-------
+ A     |     1
+ B     |     1
+ A     |     2
+ B     |     2
+ A     |     3
+ B     |     3
+(6 rows)
+
+
+A natural join is a join that creates an implicit join based on the same column names in the joined tables.
+
+The following shows the syntax of the PostgreSQL natural join:
+
+SELECT select_list
+FROM T1
+NATURAL [INNER, LEFT, RIGHT] JOIN T2;
+
+A natural join can be an inner join, left join, or right join. If you do not specify a join explicitly e.g., INNER JOIN, LEFT JOIN, RIGHT JOIN, PostgreSQL will use the INNER JOIN by default.
+
+If you use the asterisk (*) in the select list, the result will contain the following columns:
+
+    All the common columns, which are the columns from both tables that have the same name.
+    Every column from both tables, which is not a common column.
+
+PostgreSQL NATURAL JOIN examples
+
+To demonstrate the PostgreSQL natural join, we will create two tables: categories and products.
+
+The following CREATE TABLE statements create the categories and products tables.
+
+DROP TABLE IF EXISTS categories;
+CREATE TABLE categories (
+	category_id serial PRIMARY KEY,
+	category_name VARCHAR (255) NOT NULL
+);
+
+DROP TABLE IF EXISTS products;
+CREATE TABLE products (
+	product_id serial PRIMARY KEY,
+	product_name VARCHAR (255) NOT NULL,
+	category_id INT NOT NULL,
+	FOREIGN KEY (category_id) REFERENCES categories (category_id)
+);
+
+Each category has zero or many products and each product belongs to one and only one category.
+
+The category_id column in the products table is the foreign key that references to the primary key of the categories table. The category_id is the common column that we will use to perform the natural join.
+
+The following INSERT statements insert some data into the categories and products tables.
+
+INSERT INTO categories (category_name)
+VALUES
+	('Smart Phone'),
+	('Laptop'),
+	('Tablet');
+
+INSERT INTO products (product_name, category_id)
+VALUES
+	('iPhone', 1),
+	('Samsung Galaxy', 1),
+	('HP Elite', 2),
+	('Lenovo Thinkpad', 2),
+	('iPad', 3),
+	('Kindle Fire', 3);
+
+The following statement uses the NATURAL JOIN clause to join the products table with the categories table:
+
+SELECT * FROM products
+NATURAL JOIN categories;
+
+The above statement is equivalent to the following statement that uses the INNER JOIN clause.
+
+SELECT	* FROM products
+INNER JOIN categories USING (category_id);
+
+The convenience of the NATURAL JOIN is that it does not require you to specify the join clause because it uses an implicit join clause based on the common column.
+
+However, you should avoid using the NATURAL JOIN whenever possible because sometimes it may cause an unexpected result.
+when there is more than one same columns in the tables.
+
+
+
+Introduction to PostgreSQL GROUP BY clause
+
+The GROUP BY clause divides the rows returned from the SELECT statement into groups. For each group, you can apply an aggregate function e.g.,  SUM() to calculate the sum of items or COUNT() to get the number of items in the groups.
+
+The following statement illustrates the basic syntax of the GROUP BY clause:
+
+SELECT 
+   column_1, 
+   column_2,
+   ...,
+   aggregate_function(column_3)
+FROM 
+   table_name
+GROUP BY 
+   column_1,
+   column_2,
+   ...;
+
+In this syntax:
+
+    First, select the columns that you want to group e.g., column1 and column2, and column that you want to apply an aggregate function (column3).
+    Second, list the columns that you want to group in the GROUP BY clause.
+
+The statement clause divides the rows by the values of the columns specified in the GROUP BY clause and calculates a value for each group.
+
+It’s possible to use other clauses of the SELECT statement with the GROUP BY clause.
+
+PostgreSQL evaluates the GROUP BY clause after the FROM and WHERE clauses and before the HAVING SELECT, DISTINCT, ORDER BY and LIMIT clauses.
+
+1) Using PostgreSQL GROUP BY without an aggregate function example
+
+You can use the GROUP BY clause without applying an aggregate function. The following query gets data from the payment table and groups the result by customer id.
+
+SELECT
+   customer_id
+FROM
+   payment
+GROUP BY
+   customer_id;
+
+In this case, the GROUP BY works like the DISTINCT clause that removes duplicate rows from the result set.
+
+2) Using PostgreSQL GROUP BY with SUM() function example
+
+The GROUP BY clause is useful when it is used in conjunction with an aggregate function.
+
+For example, to select the total amount that each customer has been paid, you use the GROUP BY clause to divide the rows in the payment table into groups grouped by customer id. For each group, you calculate the total amounts using the SUM() function.
+
+The following query uses the GROUP BY clause to get total amount that each customer has been paid:
+
+SELECT
+	customer_id,
+	SUM (amount)
+FROM
+	payment
+GROUP BY
+	customer_id;
+
+The GROUP BY clause sorts the result set by customer id and adds up the amount that belongs to the same customer. Whenever the customer_id changes, it adds the row to the returned result set.
+
+The following statement uses the ORDER BY clause with GROUP BY clause to sort the groups:
+
+SELECT
+	customer_id,
+	SUM (amount)
+FROM
+	payment
+GROUP BY
+	customer_id
+ORDER BY
+	SUM (amount) DESC;
+
+3) Using PostgreSQL GROUP BY clause with the JOIN clause
+
+The following statement uses the GROUP BY clause with the INNER JOIN clause the get the total amount paid by each customer.
+
+Unlike the previous example, this query joins the payment table with the customer table and group customers by their names.
+
+SELECT
+	first_name || ' ' || last_name full_name,
+	SUM (amount) amount
+FROM
+	payment
+INNER JOIN customer USING (customer_id)    	
+GROUP BY
+	full_name
+ORDER BY amount;	
+
+4) Using PostgreSQL GROUP BY with COUNT() function example
+
+To find the number of payment transactions that each staff has been processed, you group the rows in the payment table by the values in the staff_id column and use the COUNT() function to get the number of transactions:
+
+SELECT
+	staff_id,
+	COUNT (payment_id)
+FROM
+	payment
+GROUP BY
+	staff_id;
+
+
+The GROUP BY clause divides the rows in the payment into groups and groups them by value in the staff_id column. For each group, it returns the number of rows by using the COUNT() function.
+
+5) Using PostgreSQL GROUP BY with multiple columns
+
+The following example uses multiple columns in the GROUP BY clause:
+
+SELECT 
+	customer_id, 
+	staff_id, 
+	SUM(amount) 
+FROM 
+	payment
+GROUP BY 
+	staff_id, 
+	customer_id
+ORDER BY 
+    customer_id;
+
+In this example, the GROUP BY clause divides the rows in the payment table by the values in the customer_id and staff_id columns. For each group of (customer_id, staff_id), the SUM() calculates the total amount.
+
+
+6) Using PostgreSQL GROUP BY clause with date column
+
+The payment_date is a timestamp column. To group payments by dates, you use the DATE() function to convert timestamps to dates first and then group payments by the result date:
+
+SELECT 
+	DATE(payment_date) paid_date, 
+	SUM(amount) sum
+FROM 
+	payment
+GROUP BY
+	DATE(payment_date);
+
+
+select customer_id from payment group by customer_id order by customer_id desc;
+elect customer_id , sum (amount) from payment group by customer_id order by sum desc;
+select first_name || ' ' || last_name as full_name , sum (amount) amount from customer inner join payment using (customer_id) group by full_name order by amount desc;
+select first_name || ' ' || last_name as full_name , sum (amount) amount from customer natural join payment  group by full_name order by amount desc;
+select first_name || ' ' || last_name as full_name , count (payment_id) from staff natural join payment group by full_name ;
+
+Introduction to PostgreSQL UNION operator
+
+The UNION operator combines result sets of two or more SELECT statements into a single result set.
+
+The following illustrates the syntax of the UNION operator that combines result sets from two queries:
+
+SELECT select_list_1
+FROM table_expresssion_1
+UNION
+SELECT select_list_2
+FROM table_expression_2
+
+To combine the result sets of two queries using the UNION operator, the queries must conform to the following rules:
+
+    The number and the order of the columns in the select list of both queries must be the same.
+    The data types must be compatible.
+
+The UNION operator removes all duplicate rows from the combined data set. To retain the duplicate rows, you use the the UNION ALL instead.
+
+
+Introduction to PostgreSQL INTERSECT operator
+
+Like the UNION and EXCEPT operators, the PostgreSQL INTERSECT operator combines result sets of two or more SELECT statements into a single result set.
+
+The INTERSECT operator returns any rows that are available in both result sets.
+
+The following illustrates the syntax of the INTERSECT operator:
+
+SELECT select_list
+FROM A
+INTERSECT
+SELECT select_list
+FROM B;
+
+
+To use the INTERSECT operator, the columns that appear in the SELECT statements must follow the folowing rules:
+
+    The number of columns and their order in the SELECT clauses must be the same.
+    The data types of the columns must be compatible.
+
+PostgreSQL INTERSECT with ORDER BY clause
+
+If you want to sort the result set returned by the INTERSECT operator, you place the ORDER BY at the final query in the query list like this:
+
+SELECT select_list
+FROM A
+INTERSECT
+SELECT select_list
+FROM B
+ORDER BY sort_expression;
+
+Introduction to the PostgreSQL EXCEPT operator
+
+Like the UNION and INTERSECT operators, the EXCEPT operator returns rows by comparing the result sets of two or more queries.
+
+The EXCEPT operator returns distinct rows from the first (left) query that are not in the output of the second (right) query.
+
+The following illustrates the syntax of the EXCEPT operator.
+
+SELECT select_list
+FROM A
+EXCEPT 
+SELECT select_list
+FROM B;
+
+The queries that involve in the EXCEPT need to follow these rules:
+
+    The number of columns and their orders must be the same in the two queries.
+    The data types of the respective columns must be compatible.
+
+
+Introduction to PostgreSQL HAVING clause
+
+The HAVING clause specifies a search condition for a group or an aggregate. The HAVING clause is often used with the GROUP BY clause to filter groups or aggregates based on a specified condition.
+
+The following statement illustrates the basic syntax of the HAVINGclause:
+
+SELECT
+	column1,
+	aggregate_function (column2)
+FROM
+	table_name
+GROUP BY
+	column1
+HAVING
+	condition;
+
+In this syntax, the group by clause returns rows grouped by the column1. The HAVING clause specifies a condition to filter the groups.
+PostgreSQL evaluates the HAVING clause after the FROM, WHERE, GROUP BY, and before the SELECT, DISTINCT, ORDER BY and LIMIT clauses.
+
+Since the HAVING clause is evaluated before the SELECT clause, you cannot use column aliases in the HAVING clause. Because at the time of evaluating the HAVING clause, the column aliases specified in the SELECT clause are not available.
+
+HAVING vs. WHERE
+
+The WHERE clause allows you to filter rows based on a specified condition. However, the HAVING clause allows you to filter groups of rows according to a specified condition.
+
+In other words, the WHERE clause is applied to rows while the HAVING clause is applied to groups of rows.
+
+SELECT
+	customer_id,
+	SUM (amount)
+FROM
+	payment
+GROUP BY
+	customer_id
+HAVING
+	SUM (amount) > 200;
